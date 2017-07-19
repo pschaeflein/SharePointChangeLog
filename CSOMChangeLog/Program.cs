@@ -1,6 +1,8 @@
-﻿using Microsoft.SharePoint.Client;
+﻿using Microsoft.IdentityModel.Clients.ActiveDirectory;
+using Microsoft.SharePoint.Client;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq;
 using System.Security;
 using System.Text;
@@ -15,15 +17,23 @@ namespace CSOMChangeLog
 			const string siteUrl = "[your-site-here]";
 			ChangeToken chgToken = default(ChangeToken);
 
-			ClientContext clientContext = new ClientContext(siteUrl);
-			clientContext.Credentials = new SharePointOnlineCredentials("[your-login]", ConvertToSecureString("[your-password]"));
+			string tenantId = ConfigurationManager.AppSettings["TenantId"];
+			string clientId = ConfigurationManager.AppSettings["ClientId"];
+			string clientSecret = ConfigurationManager.AppSettings["ClientSecret"];
+
+			string certificatePath = ConfigurationManager.AppSettings["CertificatePath"];
+			string certificatePassword = ConfigurationManager.AppSettings["CertificatePassword"];
+
+
+			ClientContext clientContext = ContextProvider.GetAppOnlyClientContext(siteUrl,clientId,tenantId,certificatePath,certificatePassword);
+//			ClientContext clientContext = new ClientContext(siteUrl);
 
 			var site = clientContext.Site;
 
 			ChangeQuery siteCQ = new ChangeQuery(true, true);
 			var siteChanges = site.GetChanges(siteCQ);
 			clientContext.Load(siteChanges);
-			clientContext.ExecuteQuery();
+			clientContext.ExecuteQueryRetry();
 
 			string changeType = String.Empty;
 			string itemId = String.Empty;
